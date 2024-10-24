@@ -1,0 +1,69 @@
+---
+title: "Project 1 Code"
+author: "Seth Bitney, Sarah Hall, Nathan Koh, Hannah Richardson"
+date: "2024-10-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+data <- read.csv('diamonds4.csv')
+```
+
+## Individual Variable Code
+
+Here is a place to put any code or visualizations we need to perform
+
+### Color
+
+```{r}
+
+```
+
+
+### Clarity
+
+```{r}
+
+```
+
+
+### Carat 
+
+```{r}
+meancarat<-mean(data$carat)
+mediancarat<-median(data$carat)
+
+
+#Checking the spread
+hist(data$carat)
+
+
+```
+
+Average carat size is .81344
+Median carat size is .52
+
+### Cut 
+
+```{r}
+
+```
+
+
+### Price
+
+```{r cars}
+summary(cars)
+```
+
+## Regression Code
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
