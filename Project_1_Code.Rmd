@@ -5,7 +5,7 @@ date: "2024-10-27"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 data <- read.csv('diamonds4.csv')
@@ -19,6 +19,59 @@ Here is a place to put any code or visualizations we need to perform
 
 ```{r}
 
+#reorder the bar chart so that it shows color grade in a hierarchical order when looking left to right
+data$color <-factor(data$color, levels =c("J","I","H","G","F","E","D"))
+
+#plot the bar chart
+ggplot(data, aes(x=color,y=price))+
+  geom_bar(stat="identity", fill = "tomato3")+
+  theme(axis.text.x = element_text(),
+        plot.title=element_text(hjust = 0.5))+
+  labs(x="Color",y="Price", title = "Distribution of Diamond Price by Color Grade")
+
+```
+
+To provide additional context regarding the color variable, we can create a new dataframe which shows the proportion of the number of diamonds in each color group, the average carat, average price, and how frequent it is within the dataset.  
+
+```{r}
+Data2<-data %>% 
+  group_by(color) %>% 
+  summarize(avg.prices=mean(price),avg.carat=mean(carat),total = n())
+
+grouped <-table(data$color)
+totals<-sum(grouped)
+
+color_percent<-(grouped / totals)*100
+
+new_df<-data.frame(Data2,color_percent)
+
+new_df<-new_df[,c(1,2,3,4,6)] #removing duplicated rows for clarity
+new_df #Freq is already converted to a percent.
+```
+
+```{r}
+ggplot(new_df, aes(x=color,y=avg.prices))+
+  geom_bar(stat="identity", fill="darkslategrey")+
+  theme(axis.text.x = element_text(),
+        plot.title=element_text(hjust = 0.5))+
+  labs(x="Color",y="Average Price", title = "Distribution of Average Price by Color")
+```
+
+```{r}
+ggplot(new_df, aes(x=color,y=Freq))+
+  geom_bar(stat="identity",fill="tomato3")+
+  theme(axis.text.x = element_text(angle=0),
+        plot.title=element_text(hjust = 0.5))+
+  labs(x="Color",y="Frequency", title = "Frequency of Diamonds across the Color Grade Scale")
+```
+```{r fig.align="center", echo = TRUE,fig.width = 9}
+data$color = as.character(data$color)
+
+#unable to see boxplot without adjusting scale. 
+data %>% 
+  ggplot(aes(x=price,y=color,fill=color))+
+  geom_boxplot()
+  
 ```
 
 
@@ -33,17 +86,26 @@ Here is a place to put any code or visualizations we need to perform
 
 ```{r}
 meancarat<-mean(data$carat)
+#Mean carat size is .813
 mediancarat<-median(data$carat)
+#Median carat size is .52
 
+#Checking the spread of just carat
+hist(data$carat,xlab="Carat Size",ylab="# of Diamonds",main="Distribution of Blue Nile Diamond Carat Size", col='darkslategrey',border='white')
 
-#Checking the spread
-hist(data$carat)
-
+#Checking the relationship between price and carat
+plot(x = data$carat, y = data$price,type = "p", 
+     main = "Scatterplot of Carat Against Price of Blue Nile Diamonds",
+     xlab = "Carat Size",
+     ylab = "Diamond Price",
+     col = "tomato3") 
 
 ```
 
-Average carat size is .81344
+Average carat size is .81344  
 Median carat size is .52
+
+
 
 ### Cut 
 
@@ -54,16 +116,16 @@ Median carat size is .52
 
 ### Price
 
-```{r cars}
-summary(cars)
+```{r}
+
 ```
 
 ## Regression Code
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
