@@ -78,9 +78,39 @@ data %>%
 ### Clarity
 
 ```{r}
+Clarity_Table <- table(data$clarity)
+round(prop.table(Clarity_Table), 4)
+```
+From the table above we can see that the majority of the data provided is from diamonds with a clarity classified as SI1, VS1, VS2, and SI2. 
 
+```{r}
+ggplot(data, aes(x=clarity, y=(price)))+
+  geom_bar(stat="identity", fill="darkslategrey")+
+  theme(axis.text.x = element_text(angle = 0),
+        plot.title = element_text(hjust = 0.5))+
+  labs(x="Clarity", y="Price",title="Distribution of Clarity vs Price")
+```
+From the graph we can see that the data from least to most expensive is as follows IF -> Fl -> SI2 ->  VVS2 -> SI1->VVS1 -> VS2 -> VS1
+
+From the claims on the website we expect the categories with fewest & smallest inclusions to receive the highest clarity grades and therefore they are the most expensive. From cheapest to most expensive here are the order we expect to see from the classifications of clarity, SI -> VS -> VVS -> IF -> FL. Based on the data displayed on the graph we see that VS classifications have the highest price overall. The FL and IF prices are the lowest. The site claims that SI and VS are the best value diamonds based on price and their overall clarity rating, based on the data that appears to match up for SI because SI1 prices are the 4th most expensive and the SI2 is in one of the 3 cheapest groups. But, VS diamonds are a lower quality compared to VVS but we see that VVS is cheaper overall than VS. SI also claims that SI <VVS, or VVS should be more expensive, we can see that if we averaged SI1 and SI2 this would be true, but SI1 is more expensive than VVS2. 
+
+```{r}
+ggplot(data, aes(x=clarity, y=price))+
+  geom_violin(fill="tomato3")+
+  scale_y_continuous(labels = scales::comma)+
+  labs(x="Clarity", y="Price", title="Distribution of Prices by Clarity")
 ```
 
+From the graph above we can see that FL and VS have the highest variablity in price. Though Blue Nile claims that IF is one of the higher clarities so it should have a higher price it is has one of the lowest prices. Overall the majority of classifications are grouped around the same dollar value.
+
+```{r}
+ggplot(data, aes(x=clarity,y=price))+
+  geom_point(alpha=0.5,col="darkslategrey",size=3)+
+  scale_y_continuous(labels = scales::comma)+
+  labs(x="Clarity", y="Price",title="Scatterplot of Blue Nile Diamond Clarity Against Price")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+From the graph above we can see a similar trend to what is found in the violin plot. The majority of diamond prices is around the same price, regardless of the clarity of the diamond. VS1 and VVS1 have the majority of higher prices falling around $200,000 +- $50,000. VS2 had an outlier of a diamond that is around $350,000 but on average it's values are lower. While blue nile claims that FL is the highest quality when it comes to clarity and it should be most expensive 2/3 values in the data set are relatively low and fit in line with price of all other clarity classifications. One outlier has the highest price in the dataset. 
 
 ### Carat 
 
@@ -116,16 +146,117 @@ Median carat size is .52
 
 ### Price
 
-```{r}
+Adding some info/visuals for just price if we need them
 
+```{r}
+meanprice<-mean(data$price)
+#Mean price is $7,056.74
+medianprice<-median(data$price)
+#Median price is $1,463.50
+
+#Checking the spread of just price
+hist(data$price,xlab="Diamond Price",ylab="# of Diamonds",main="Distribution of Blue Nile Diamond Carat Size", col='darkslategrey',border='white')
 ```
 
 ## Regression Code
 
-You can also embed plots, for example:
 
 ```{r}
+caratregr <- lm(price~carat, data=data)
+
+summary(caratregr)
+
+
+```
+Summary: For every 1 unit of carat increase, price increases by $25,333.90
+
+When the number of carats is 0 the cost will be -13,550.90, which does not make sense contextually
+
+Using our R^2 we have a 68.4% certainty that the carat affects the price
+
+```{r}
+par(mfrow=c(2,2))
+plot(caratregr)
+```
+
+From residual vs fitted you can see that neither assumption is met. The variance appears to be increasing. The residuals are not evenly scattered across the axis.
+When both of these issues are present, we seek to stabilize the variance first by transforming
+the response variable first. 
+
+```{r}
+library(MASS)
+MASS::boxcox(caratregr,lambda=seq(-50,20,by=0.01))
+```
+
+Lambda is closest to zero, so we can use log(y)  
+
+```{r}
+cor(data$carat, data$price)
+```
+There is a strong positive relationship
+
+```{r}
+#Summary of what we know so far from regression and residuals
+# There is a relationship between carat and price but it is not linear
+#There is a decline to the residuals chart in the top left
+#So assumption 1 is not perhaps met
+
+#We also can see in that chart the spread of values across the y axis is not constant
+#So assumption 2 is not met either
+#The bottom left chart also shows Assumption 2 is not met
+#the horizontal spread of values is not even at all, and the line is not horizontal
+
+#Begin by regressing the y variable
+#Can do a log but we need to see how much
+
+#Taking the log of price, adding it to the model and checking the scatterplot again
+pricestar<-log(data$price)
+data<-data.frame(data,pricestar)
+
+ggplot(data, aes(x=carat, y=pricestar))+
+  geom_point()+
+  labs(x="Carat", y="Log of Price", title="Effect of Diamond Carat Against Transformed Price")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Still evidence of a relationship, but not yet a linear one
+
+```{r}
+caratregr.pricestar<-lm(pricestar~carat, data=data)
+summary(caratregr.pricestar)
+#We see our R squared has increased, lets check residuals
+```
+
+```{r}
+par(mfrow = c(2, 2))
+plot(caratregr.pricestar)
+```
+
+Y variance looks much better but now we need to regress X, since assumption 1 is still not met.
+We should be able to use a log function, based on the shape of the scatterplot.
+
+```{r}
+#Take log of carat
+caratstar<-log(data$carat)
+data<-data.frame(data,caratstar)
+
+ggplot(data, aes(x=caratstar, y=pricestar))+
+  geom_point()+
+  labs(x="Log of Carat", y="Log of Price", title="Effect of Transformed Diamond Carat against Transformed Price")+
+  theme(plot.title = element_text(hjust = 0.5))
+
 
 ```
 
+Now it looks like a linear relationship. We can use both transformed variables in an SLR and check the output.
+
+```{r}
+caratregr.pricestar.caratstar<-lm(pricestar~caratstar, data=data)
+summary(caratregr.pricestar.caratstar)
+#R squared is now 95% confidence! Let's check residuals
+```
+```{r}
+par(mfrow = c(2, 2))
+plot(caratregr.pricestar.caratstar)
+```
 
