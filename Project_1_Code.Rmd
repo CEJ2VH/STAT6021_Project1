@@ -160,7 +160,7 @@ Thoughts?
 # Sarah's plot
 ggplot(data, aes(x=clarity, y=price))+
   scale_y_continuous(labels = scales::comma)+
-  stat_summary(fun = "mean", geom = "bar",fill="darkslategrey")
+  stat_summary(fun = "mean", geom = "bar",fill="darkslategrey")+
   theme(axis.text.x = element_text(angle = 0),
         plot.title = element_text(hjust = 0.5))+
   labs(x="Clarity", y="Price",title="Distribution of Clarity vs Price")
@@ -192,7 +192,7 @@ ggplot(data, aes(x=clarity,y=price))+
   labs(x="Clarity", y="Price",title="Scatterplot of Blue Nile Diamond Clarity Against Price")+
   theme(plot.title = element_text(hjust = 0.5))
 ```
-From the graph above we can see a similar trend to what is found in the violin plot. The majority of diamond prices is around the same price, regardless of the clarity of the diamond. VS1 and VVS1 have the majority of higher prices falling around $200,000 +- $50,000. VS2 had an outlier of a diamond that is around $350,000 but on average it's values are lower. While blue nile claims that FL is the highest quality when it comes to clarity and it should be most expensive 2/3 values in the data set are relatively low and fit in line with price of all other clarity classifications. One outlier has the highest price in the dataset. 
+From the graph above we can see a similar trend to what is found in the violin plot. The majority of diamond prices is around the same price, regardless of the clarity of the diamond. VS1 and VVS1 have the majority of higher prices falling around $200,000 +- $50,000. VS2 had an outlier of a diamond that is around $350,000 but on average it's values are lower. While blue nile claims that FL is the highest quality when it comes to clarity and it should be most expensive 2/3 values in the data set are relatively low and fit in line with price of all other clarity classifications. One outlier has the highest price in the dataset.  
 
 ### Carat 
 
@@ -211,7 +211,7 @@ We can see that smaller carats are far more common. Diamonds under 1 carat make 
 
 
 Average carat size is .81344  
-Median carat size is .52
+Median carat size is .52  
 
 ```{r}
 #Checking the relationship between price and carat
@@ -222,6 +222,7 @@ ggplot(data, aes(x=carat, y=price)) +
   labs(x="Carat Weight", y="Price",title="Scatterplot of Carat Weight Against Price of Blue Nile Diamonds")+
   theme(plot.title = element_text(hjust = 0.5))
 ```
+
 BN doesn't make too many claims about carat weight, other than that carat has the biggest impact on price. This appears to be true, as price increases along an exponential curve as carat increases.
 
 They imply that prices jump up at the .0 and .5 mark, so better value is obtained by buying right below that, (i.e. buying 0.95 carat instead of 1.0). However, I am not sure how to measure value in that sense.
@@ -239,11 +240,36 @@ ggplot(data, aes(x=cut, y=price, size=carat)) +
 ```
 This seems to support the claim, since we see larger carat weight across most cuts, but larger carats seem to top the charts in each cut category. However I am not sure if it's worth further investigation, or if the findings are strong enough to include in our research.
 
+```{r}
+#Get ratio of carat weight per dollar
+pricepercarat<-(data$price/data$carat)
+data<-data.frame(data,pricepercarat)
+
+data$caratratio <-round(data$pricepercarat,3)
+#reordering levels in ascending order from worst to best cut
+data$cut<-factor(data$cut, levels=c("Good","Very Good","Ideal","Astor Ideal"))
+
+ggplot(data,aes(x=cut,y=pricepercarat))+
+  geom_boxplot()+
+  scale_y_continuous(labels = scales::comma)+
+  theme(axis.text.x = element_text(),plot.title=element_text(hjust = 0.5))+
+  labs(x="Cut",y="Price Per Carat", title = "Diamond Cut Against Price per Carat, with Outliers")
+
+ggplot(data, aes(x=carat, y=pricepercarat)) +
+  geom_point(size=2.5, col="darkslategrey",alpha=0.3)+
+  scale_y_continuous(labels = scales::comma)+
+  labs(x="Carat Weight", y="Price",title="Scatterplot of Carat Weight Against Price of Blue Nile Diamonds")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
+
 ### Cut 
 
 ```{r}
-#reodering levels in ascending order from worst to best cut
-data$cut<-factor(data$cut, levels=c("Good","Very Good","Ideal","Astor Ideal"))
+
 levels(data$cut)
 
 #creating scatterplot to see relationship between cut and price by group
@@ -291,6 +317,25 @@ ggplot(mean_data, aes(x=Group.1, y=x))+
   theme(axis.text.x = element_text(angle = 90), 
         plot.title = element_text(hjust = 0.5))+
   labs(x="Cut", y="Average Price", title="Average Price by Cut")
+```
+
+```{r}
+# Stacked
+ggplot(data, aes(x=color,fill=cut))+
+  geom_bar(stat="count", width=0.7)+
+    theme(axis.text.x = element_text(angle = 90), 
+        plot.title = element_text(hjust = 0.5))+
+  labs(title = "Diamond Color by Cut",x="Diamond Color", y="Number of Diamonds")
+```
+
+
+```{r}
+# Stacked
+ggplot(data, aes(x=clarity,fill=cut))+
+  geom_bar(stat="count", width=0.7)+
+    theme(axis.text.x = element_text(angle = 90), 
+        plot.title = element_text(hjust = 0.5))+
+  labs(title = "Diamond Clarity by Cut",x="Diamond Clarity", y="Number of Diamonds")
 ```
 
 
@@ -353,10 +398,11 @@ Using the box-cox plot we can narrow down the range of our lambda to choose. Sin
 library(MASS) ##to use boxcox function
 MASS::boxcox(caratregr, lambda = seq(0.2, 0.4, 1/10))
 ```
-Based on the graph above we will choose a lambda value of 0.3. Raise the response variable to the power of the lambda value we chose. 
+Based on the Box Cox plot, raising the response variable to power of a value within the confidence interval should work. 
+Based on the graph above we will raise the response variable to 0.3. Raise the response variable to the power of the lambda value we chose. 
 ```{r}
 #transform y 
-data$newy<-log(data$price + 0.3)
+data$newy<-log(data$price)
 
 #regress new y against x
 result <- lm(newy~carat, data = data)
@@ -370,14 +416,6 @@ plot(result)
 **Commentary on choices for transformation **
 From the residual plot we can see that the variance of the residuals improved and the variance is more constant when moving from left to right on the graph. 
 
-We will graph the box-cox plot with the newy value to see if 1 lies within the 95% confidence interval. If it does we do not have to transform the response variable any more. 
-
-```{r}
-library(MASS) ##to use boxcox function
-MASS::boxcox(result, lambda = seq(0.2, 2, 1/10))
-```
-1 does fall into the CI so we do not need to transform price again. 
-
 Based on the residual plot the residuals are still not evenly scattered across the horizontal axis, indicating that there is a non-linear relationship between the variables. So we will need to transform carat, the x variable, next. In order to determine the x value we will need to create a scatter plot of our adjusted y value against x.
 
 ```{r}
@@ -389,7 +427,7 @@ ggplot2::ggplot(data, aes(x=carat,y=newy))+
 
 ```
 
-Based on the graph we will choose to use a sqrt(x) transformation to the carat.
+Based on the graph we will choose to use a log(x) transformation to the carat.
 
 Regress y^2 against x* and create the corresponding residual plot.
 ```{r}
@@ -398,27 +436,59 @@ data$caratstar<-log(data$carat)
 ggplot(data, aes(x=caratstar, y=newy))+
   geom_point()+
   geom_smooth(method = "lm", se=FALSE)+
-  labs(x="Log of Carat", y="Price^0.3", title="Effect of Regressed Diamond Carat against Regressed Price")
+  labs(x="Log of Carat", y="Log of Price", title="Effect of Regressed Diamond Carat against Regressed Price")
 
 ```
+Based on the scatter plot it appears that both assumption 1 and 2 are met. To verify we will look at the residual plot. 
 
+```{r}
+final_result <- lm(newy~caratstar, data = data)
+
+#create a new residual plot 
+par(mfrow=c(2,2))
+plot(final_result)
+```
+From the residual vs fitted graph we see that the variance of the residuals improved and is more constant. The residuals are evenly scattered across the horizontal axis so both assumptions are met. 
+
+We no longer need to transform the variables
 
 **Testing hypothesis **
-```{r}
+From the scatterplot we verify that positive linear association exists and assumptions 1 and 2 are met. We do not need see any pattern in the data that warrants further investigation.
 
+```{r}
+cor(data$caratstar, data$newy)
 ```
+The correlation between the regressed price and carat is 0.9770805. This indicates that are assumptions from the scatterplot are correct and there is a strong positive linear relationship between the two variables. 
+
+```{r}
+summary(final_result)
+```
+B1^ = 1.944020
+B^0 = 8.521208
+R^2 = 0.9547
+σ^2 = 0.2761^2
+
+For each additional carat, the predicted price increases by $1.94. ***units???***
+
+When the number of carats is 0 the predicted price of the ring will be $8.52
 
 **Walking through calculations for: **
 
 **F-test** 
+```{r}
+anova.tab <- anova(final_result)
+anova.tab
+```
+The anova F  statistic is 25535. The hypotheses are H0 = B1 =0 and Ha <> 0. Since the p-value is small, we reject the null hypothesis. This supports the claim that there is a linear association between price and carat. 
 
 **P-test **
 
+
 **Assessing R squared **
+The R^2 is 0.9547.  This means that about 95.47% of the variation in the price can be explained by the number of carats for diamonds.
+
 
 **Final linear formula **
+y^ = 8.521208 + 1.944020x
 
 **Commentary on carat’s relationship to diamond price **
-
-
-
