@@ -242,7 +242,55 @@ This seems to support the claim, since we see larger carat weight across most cu
 ### Cut 
 
 ```{r}
+#reodering levels in ascending order from worst to best cut
+data$cut<-factor(data$cut, levels=c("Good","Very Good","Ideal","Astor Ideal"))
+levels(data$cut)
 
+#creating scatterplot to see relationship between cut and price by group
+ggplot(data = data, mapping = aes(x=cut,y=price))+
+  geom_point(fill = "blue")+
+  geom_smooth(method = lm, se = FALSE)+
+  labs(x="Cut", y = "Price", title = "Relationship between Diamond Cut and Price")
+#plot shows many outliers by cut (Astor Ideal appears to have the most closely clustered datapoints by price).  Difficult to see density of points in groups. #Will create additional visualizations to better explore data
+
+#creating violin plot to more clearly see differences in cut groups
+ggplot(data, aes(x=cut, y=price))+
+  geom_violin()+
+  labs(x="cut", y="price", title="Diamond cut vs price")
+
+#examining the number of datapoints in each cut to better understand data
+summary(data$cut)
+ #     Good   Very Good       Ideal Astor Ideal 
+ #        73         382         739          20 
+#Astor has the smallest n of any group, while Ideal has the largest.  
+
+
+#calculating the median price by cut to better understand data
+median_data <- aggregate(data$price,         # Median by group
+          list(data$cut),
+          median)
+median_data
+
+#calculating mean price by cut to better understand data
+mean_data <- aggregate(data$price,         # mean by group
+          list(data$cut),
+          mean)
+mean_data 
+
+
+#plotting median price by cut
+ggplot(median_data, aes(x=Group.1, y=x))+
+  geom_bar(fill= 'blue', stat="identity")+ 
+  theme(axis.text.x = element_text(angle = 90), 
+        plot.title = element_text(hjust = 0.5))+
+  labs(x="Cut", y="Median Price", title="Median Price by Cut")
+
+#plotting mean price by cut
+ggplot(mean_data, aes(x=Group.1, y=x))+
+  geom_bar(fill= 'blue', stat="identity")+ 
+  theme(axis.text.x = element_text(angle = 90), 
+        plot.title = element_text(hjust = 0.5))+
+  labs(x="Cut", y="Average Price", title="Average Price by Cut")
 ```
 
 
