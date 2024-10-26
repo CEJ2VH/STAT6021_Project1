@@ -6,37 +6,52 @@ output: html_document
 ---
 
 ```{r setup, include=TRUE}
-knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 data <- read.csv('diamonds4.csv')
 ```
 
 ## Individual Variable Code
 
-Here is a place to put any code or visualizations we need to perform
+Here is a place to put any code or visualizations we need to perform  
 
 ### Color
 
 ```{r}
-
-#reorder the bar chart so that it shows color grade in a hierarchical order when looking left to right
+#reorder bar chart so that it goes from near-colorless (J,I,H,G) to colorless (F,E,D)
 data$color <-factor(data$color, levels =c("J","I","H","G","F","E","D"))
 
 #plot the bar chart
 ggplot(data, aes(x=color,y=price))+
   geom_bar(stat="identity", fill = "tomato3")+
+  scale_y_continuous(labels = scales::comma)+
   theme(axis.text.x = element_text(),
         plot.title=element_text(hjust = 0.5))+
   labs(x="Color",y="Price", title = "Distribution of Diamond Price by Color Grade")
 
 ```
+ *Fig 1. Distribution of Diamonds *\
+
+From the bar chart, we can come to the following conclusions based on these initial observations.  \
+
+Color D has the highest cumulative price. According to Blue Nile, diamond prices decline or increase in alphabetical order, so D diamonds should have the most cost cumulatively. Note that D, E, and F color diamonds are all rare, colorless diamonds that are high quality with a pure icy look.\
+
+Similarly, color J has the lowest cumulative price due to it being at the bottom of the grading scale. These are considered to have no discernible color, but great value for the quality.
+\
+  
+
+However, when looking at the other color grades, we see a discrepancy from Blue Nile's claim that prices increase or decrease in alphabetical order. The cumulative prices for grade G requires additional research as it can be due to other factors (which may not necessarily be relevant to Color vs Price). 
+\
+  
+**Sarah's notes** 
+I am concerned, like further down with clarity, that the bar chart is showing a sum of diamond prices for each category without touching on the number of diamonds per color. Should this be included in this analysis?
+**end of Sarah's notes**
 
 To provide additional context regarding the color variable, we can create a new dataframe which shows the proportion of the number of diamonds in each color group, the average carat, average price, and how frequent it is within the dataset.  
 
 ```{r}
 Data2<-data %>% 
   group_by(color) %>% 
-  summarize(avg.prices=mean(price),avg.carat=mean(carat),total = n())
+  summarize(avg.prices=mean(price),avg.carat=mean(carat),total = n()) 
 
 grouped <-table(data$color)
 totals<-sum(grouped)
@@ -49,13 +64,18 @@ new_df<-new_df[,c(1,2,3,4,6)] #removing duplicated rows for clarity
 new_df #Freq is already converted to a percent.
 ```
 
+
+
+
 ```{r}
 ggplot(new_df, aes(x=color,y=avg.prices))+
-  geom_bar(stat="identity", fill="darkslategrey")+
+  geom_bar(stat="identity", fill="darkslategrey", col="white")+
+  scale_y_continuous(labels = scales::comma)+
   theme(axis.text.x = element_text(),
         plot.title=element_text(hjust = 0.5))+
-  labs(x="Color",y="Average Price", title = "Distribution of Average Price by Color")
+  labs(x="Color",y="Average Price", title = "Distribution of Average Diamond Price by Color")
 ```
+*Fig. 2: Dataframe showing average price across each diamond color grade*\
 
 ```{r}
 ggplot(new_df, aes(x=color,y=Freq))+
@@ -64,15 +84,48 @@ ggplot(new_df, aes(x=color,y=Freq))+
         plot.title=element_text(hjust = 0.5))+
   labs(x="Color",y="Frequency", title = "Frequency of Diamonds across the Color Grade Scale")
 ```
-```{r fig.align="center", echo = TRUE,fig.width = 9}
-data$color = as.character(data$color)
+\
+Fig 3: Bar chart showing the average prices of diamonds across color grading scale\
 
-#unable to see boxplot without adjusting scale. 
-data %>% 
-  ggplot(aes(x=price,y=color,fill=color))+
-  geom_boxplot()
+The bar chart portrays the average price of diamonds in each color grade from the lowest grade to highest. These are ordered similarly for ease of viewing. The following observations are seen:
+
+1) Color J is the cheapest on average - $\$3934.089$\
+2) Color D is the most expensive on average - $\$10525.155$\
+3) We see a similar issue in Fig. 3 where Blue Nile's claim comes into question. Some of the reasons of why that is can be due to the following:
+
+  a) If the diamond prices are supposed to increase or decrease in alphabetical order based on the color grading scale, there should be an indicator that prices increase or decrease across all tiers cumulatively (Fig. 1). Assuming G does, this implies that the average price of each diamond should still follow an increasing or decreasing pattern based on color grade. However, G does not. Also, the average prices for H, G, and F are also not ordered, which disproves this claim.
+  
+  
+\
+  b) Depending on the shape of the diamond, prices can fluctuate despite their color grade. According to Blue Nile, the best shapes are Radiant, Cushion, and Princess which are known to mask color the best with their multifaceted sparkle. This implies that these shapes can be more expensive despite their color grade\
+  
+  
+  c) The type of diamond cut directly affects diamond price (ie: Astor and Ideal cuts are claimed to be most expensive due to these cuts maximizing interaction with light)\
+
+
+The second claim we want to prove is if Color is the second most important variable of the 4 C's. We can represent this case by using a boxplot to show the distribution of datapoints within each color grade.\
+
+
+*Note: Due to the extreme outliers across all color grades, this made it difficult to see the boxplots themselves. Due to this, two boxplots were created (Fig.4 and Fig.5) for clarity. The first boxplot contains the outliers, while the second boxplot is rescaled so that the plots themselves are visible.*
+
+```{r }
+ggplot(data,aes(x=color,y=price,fill=color))+
+  geom_boxplot()+
+  scale_y_continuous(labels = scales::comma)+
+  theme(axis.text.x = element_text(),plot.title=element_text(hjust = 0.5))+
+  labs(x="Color",y="Price", title = "Boxplot of Diamond Color Against Price, with Outliers")
+```
+*Fig.4: Color-Price Boxplot with Outlier Indicators*
+
+```{r}
+ggplot(data,aes(x=color,y=price,fill=color))+
+  geom_boxplot(outlier.color=NA)+ylim(0,12500)+
+  theme(axis.text.x = element_text(),plot.title=element_text(hjust = 0.5))+
+  labs(x="Color",y="Price",title="Color to Diamond Price Distribution, without Outliers")
   
 ```
+
+
 
 
 ### Clarity
@@ -84,8 +137,10 @@ round(prop.table(Clarity_Table), 4)
 From the table above we can see that the majority of the data provided is from diamonds with a clarity classified as SI1, VS1, VS2, and SI2. 
 
 ```{r}
-ggplot(data, aes(x=clarity, y=(price)))+
+#Hannah's chart
+ggplot(data, aes(x=clarity, y=price))+
   geom_bar(stat="identity", fill="darkslategrey")+
+  scale_y_continuous(labels = scales::comma)+
   theme(axis.text.x = element_text(angle = 0),
         plot.title = element_text(hjust = 0.5))+
   labs(x="Clarity", y="Price",title="Distribution of Clarity vs Price")
@@ -94,10 +149,37 @@ From the graph we can see that the data from least to most expensive is as follo
 
 From the claims on the website we expect the categories with fewest & smallest inclusions to receive the highest clarity grades and therefore they are the most expensive. From cheapest to most expensive here are the order we expect to see from the classifications of clarity, SI -> VS -> VVS -> IF -> FL. Based on the data displayed on the graph we see that VS classifications have the highest price overall. The FL and IF prices are the lowest. The site claims that SI and VS are the best value diamonds based on price and their overall clarity rating, based on the data that appears to match up for SI because SI1 prices are the 4th most expensive and the SI2 is in one of the 3 cheapest groups. But, VS diamonds are a lower quality compared to VVS but we see that VVS is cheaper overall than VS. SI also claims that SI <VVS, or VVS should be more expensive, we can see that if we averaged SI1 and SI2 this would be true, but SI1 is more expensive than VVS2. 
 
+**Sarah's Notes on this**   
+I think Hannah's analysis above is based on a bar chart looking at distribution of price by clarity, but that seemingly creates a sum of the values. So Flawless (FL) is the second least expensive by this, but that's only because those diamonds are rarer in the dataset. I did it by average price and saw something much more in line with Blue Niles's website claims. 
+
+There are only 3 FL diamonds and only about 50 IF diamonds, so the totals are much lower than the other clarity levels, which all have far more.
+
+Thoughts?
+
+```{r}
+# Sarah's plot
+ggplot(data, aes(x=clarity, y=price))+
+  scale_y_continuous(labels = scales::comma)+
+  stat_summary(fun = "mean", geom = "bar",fill="darkslategrey")
+  theme(axis.text.x = element_text(angle = 0),
+        plot.title = element_text(hjust = 0.5))+
+  labs(x="Clarity", y="Price",title="Distribution of Clarity vs Price")
+
+group_mean<- aggregate(x= data$price,
+                      # Specify group indicator
+                      by = list(data$clarity),      
+                      # Specify function (i.e. mean)
+                      FUN = mean)
+print(group_mean)
+```
+
+
 ```{r}
 ggplot(data, aes(x=clarity, y=price))+
   geom_violin(fill="tomato3")+
   scale_y_continuous(labels = scales::comma)+
+  theme(axis.text.x = element_text(angle = 0),
+        plot.title = element_text(hjust = 0.5))+
   labs(x="Clarity", y="Price", title="Distribution of Prices by Clarity")
 ```
 
@@ -121,21 +203,41 @@ mediancarat<-median(data$carat)
 #Median carat size is .52
 
 #Checking the spread of just carat
-hist(data$carat,xlab="Carat Size",ylab="# of Diamonds",main="Distribution of Blue Nile Diamond Carat Size", col='darkslategrey',border='white')
+hist(data$carat,xlab="Carat Weight",ylab="# of Diamonds",main="Distribution of Blue Nile Diamond Carat Size", col='darkslategrey',border='white')
 
-#Checking the relationship between price and carat
-plot(x = data$carat, y = data$price,type = "p", 
-     main = "Scatterplot of Carat Against Price of Blue Nile Diamonds",
-     xlab = "Carat Size",
-     ylab = "Diamond Price",
-     col = "tomato3") 
 
 ```
+We can see that smaller carats are far more common. Diamonds under 1 carat make up over 70% of the dataset.
+
 
 Average carat size is .81344  
 Median carat size is .52
 
+```{r}
+#Checking the relationship between price and carat
 
+ggplot(data, aes(x=carat, y=price)) +
+  geom_point(size=2.5, col="tomato3",alpha=0.4)+
+  scale_y_continuous(labels = scales::comma)+
+  labs(x="Carat Weight", y="Price",title="Scatterplot of Carat Weight Against Price of Blue Nile Diamonds")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+BN doesn't make too many claims about carat weight, other than that carat has the biggest impact on price. This appears to be true, as price increases along an exponential curve as carat increases.
+
+They imply that prices jump up at the .0 and .5 mark, so better value is obtained by buying right below that, (i.e. buying 0.95 carat instead of 1.0). However, I am not sure how to measure value in that sense.
+
+It's possible they imply cut is the other most important factor. They say "[Cut] is the most important factor because it maximizes sparkle. Even a high-carat diamond with excellent color and clarity can appear lifeless and dull if the cut is poor."
+
+Looking at that:
+
+```{r}
+ggplot(data, aes(x=cut, y=price, size=carat)) +
+  geom_point(col="darkslategrey",alpha=0.4)+
+  scale_y_continuous(labels = scales::comma)+
+  labs(x="Carat Weight", y="Price",title="Scatterplot of Cut and Carat Against Price of Blue Nile Diamonds")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+This seems to support the claim, since we see larger carat weight across most cuts, but larger carats seem to top the charts in each cut category. However I am not sure if it's worth further investigation, or if the findings are strong enough to include in our research.
 
 ### Cut 
 
@@ -146,7 +248,7 @@ Median carat size is .52
 
 ### Price
 
-Adding some info/visuals for just price if we need them
+Adding some info for just price if we need them
 
 ```{r}
 meanprice<-mean(data$price)
@@ -154,8 +256,8 @@ meanprice<-mean(data$price)
 medianprice<-median(data$price)
 #Median price is $1,463.50
 
-#Checking the spread of just price
-hist(data$price,xlab="Diamond Price",ylab="# of Diamonds",main="Distribution of Blue Nile Diamond Carat Size", col='darkslategrey',border='white')
+min(data$price)
+
 ```
 
 ## Regression Code
