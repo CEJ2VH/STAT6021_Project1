@@ -262,103 +262,115 @@ min(data$price)
 
 ## Regression Code
 
+**Developing null and alternative hypotheses: **
+
+H0: B1 = 0
+Ha: B1 <> 0 
+
+**Description of initial linear regression **
+We will start by graphing the relationship between price and carat to see if the relationship appears to be linear
+```{r}
+ggplot(data, aes(x=carat, y=price))+
+  geom_point()+ #scatterplot
+  geom_smooth(method = "lm", se = FALSE) #adds linear line 
+  labs(x="Carat", y="Price", title="Effect of Diamond Carat against Price")
+
+```
+From the graph we can see that the relationship is approximately linear. Visually we can see that neither assumption 1 or 2 is met because the residuals are not evenly scattered across the horizontal line and they also do not have similar vertical variation across the plot. We have to modify the model to fit the assumptions. 
 
 ```{r}
 caratregr <- lm(price~carat, data=data)
-
 summary(caratregr)
-
-
 ```
-Summary: For every 1 unit of carat increase, price increases by $25,333.90
+From the initial linear regression we can see that 1 unit of carat increase, price increases by 25333.9.
+Using our R^2 we have a 68.4% certainty that the carat affects the price.
 
-When the number of carats is 0 the cost will be -13,550.90, which does not make sense contextually
+**Description of any transformation performed for fitting the SLR model **
 
-Using our R^2 we have a 68.4% certainty that the carat affects the price
+**Checking SLR assumptions**
 
 ```{r}
-par(mfrow=c(2,2))
+par(mfrow = c(2, 2))
 plot(caratregr)
 ```
-
-From residual vs fitted you can see that neither assumption is met. The variance appears to be increasing. The residuals are not evenly scattered across the axis.
-When both of these issues are present, we seek to stabilize the variance first by transforming
-the response variable first. 
+From the graph above we have further evidence that neither assumption is met. From the residual vs fitted graph we can see that the variance increases with the fitted Y, so assumption 1 is not met. Also the residuals are not evenly scattered across the horizontal axis so assumption 2 is not met. From this plot we will choose to perform a log transformation with a lambda value less than 1. 
 
 ```{r}
-library(MASS)
-MASS::boxcox(caratregr,lambda=seq(-50,20,by=0.01))
+library(MASS) ##to use boxcox function
+MASS::boxcox(caratregr, lambda = seq(-0.5, 0.5, 1/10))
+```
+Using the box-cox plot we can narrow down the range of our lambda to choose. Since 1 is not inside the CI we can confirm that we can transform the y (price) with a log transformation. We will zoom into the graph to choose a lambda that falls within the 95 % confidence interval (between the vertical dotted lines). 
+
+```{r}
+library(MASS) ##to use boxcox function
+MASS::boxcox(caratregr, lambda = seq(0.2, 0.4, 1/10))
+```
+Based on the graph above we will choose a lambda value of 0.3. Raise the response variable to the power of the lambda value we chose. 
+```{r}
+#transform y 
+data$newy<-log(data$price + 0.3)
+
+#regress new y against x
+result <- lm(newy~carat, data = data)
+
+#create a new residual plot 
+par(mfrow=c(2,2))
+plot(result)
 ```
 
-Lambda is closest to zero, so we can use log(y)  
+
+**Commentary on choices for transformation **
+From the residual plot we can see that the variance of the residuals improved and the variance is more constant when moving from left to right on the graph. 
+
+We will graph the box-cox plot with the newy value to see if 1 lies within the 95% confidence interval. If it does we do not have to transform the response variable any more. 
 
 ```{r}
-cor(data$carat, data$price)
+library(MASS) ##to use boxcox function
+MASS::boxcox(result, lambda = seq(0.2, 2, 1/10))
 ```
-There is a strong positive relationship
+1 does fall into the CI so we do not need to transform price again. 
+
+Based on the residual plot the residuals are still not evenly scattered across the horizontal axis, indicating that there is a non-linear relationship between the variables. So we will need to transform carat, the x variable, next. In order to determine the x value we will need to create a scatter plot of our adjusted y value against x.
 
 ```{r}
-#Summary of what we know so far from regression and residuals
-# There is a relationship between carat and price but it is not linear
-#There is a decline to the residuals chart in the top left
-#So assumption 1 is not perhaps met
-
-#We also can see in that chart the spread of values across the y axis is not constant
-#So assumption 2 is not met either
-#The bottom left chart also shows Assumption 2 is not met
-#the horizontal spread of values is not even at all, and the line is not horizontal
-
-#Begin by regressing the y variable
-#Can do a log but we need to see how much
-
-#Taking the log of price, adding it to the model and checking the scatterplot again
-pricestar<-log(data$price)
-data<-data.frame(data,pricestar)
-
-ggplot(data, aes(x=carat, y=pricestar))+
+ggplot2::ggplot(data, aes(x=carat,y=newy))+
   geom_point()+
-  labs(x="Carat", y="Log of Price", title="Effect of Diamond Carat Against Transformed Price")+
-  theme(plot.title = element_text(hjust = 0.5))
+  geom_smooth(method = "lm", se=FALSE)+
+  labs(x="Carat", y="Priceˆ0.3",
+  title="Priceˆ0.3 against Carat")
+
 ```
 
-Still evidence of a relationship, but not yet a linear one
+Based on the graph we will choose to use a sqrt(x) transformation to the carat.
 
+Regress y^2 against x* and create the corresponding residual plot.
 ```{r}
-caratregr.pricestar<-lm(pricestar~carat, data=data)
-summary(caratregr.pricestar)
-#We see our R squared has increased, lets check residuals
-```
+data$caratstar<-log(data$carat)
 
-```{r}
-par(mfrow = c(2, 2))
-plot(caratregr.pricestar)
-```
-
-Y variance looks much better but now we need to regress X, since assumption 1 is still not met.
-We should be able to use a log function, based on the shape of the scatterplot.
-
-```{r}
-#Take log of carat
-caratstar<-log(data$carat)
-data<-data.frame(data,caratstar)
-
-ggplot(data, aes(x=caratstar, y=pricestar))+
+ggplot(data, aes(x=caratstar, y=newy))+
   geom_point()+
-  labs(x="Log of Carat", y="Log of Price", title="Effect of Transformed Diamond Carat against Transformed Price")+
-  theme(plot.title = element_text(hjust = 0.5))
-
+  geom_smooth(method = "lm", se=FALSE)+
+  labs(x="Log of Carat", y="Price^0.3", title="Effect of Regressed Diamond Carat against Regressed Price")
 
 ```
 
-Now it looks like a linear relationship. We can use both transformed variables in an SLR and check the output.
 
+**Testing hypothesis **
 ```{r}
-caratregr.pricestar.caratstar<-lm(pricestar~caratstar, data=data)
-summary(caratregr.pricestar.caratstar)
-#R squared is now 95% confidence! Let's check residuals
+
 ```
-```{r}
-par(mfrow = c(2, 2))
-plot(caratregr.pricestar.caratstar)
-```
+
+**Walking through calculations for: **
+
+**F-test** 
+
+**P-test **
+
+**Assessing R squared **
+
+**Final linear formula **
+
+**Commentary on carat’s relationship to diamond price **
+
+
 
