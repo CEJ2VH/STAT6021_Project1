@@ -120,15 +120,8 @@ ggplot(data, aes(x=clarity, y=price))+
 ```
 
 
-**Sarah's Notes on this**   
-I think Hannah's analysis above is based on a bar chart looking at distribution of price by clarity, but that seemingly creates a sum of the values. So Flawless (FL) is the second least expensive by this, but that's only because those diamonds are rarer in the dataset. I did it by average price and saw something much more in line with Blue Niles's website claims. 
-
-There are only 3 FL diamonds and only about 50 IF diamonds, so the totals are much lower than the other clarity levels, which all have far more.
-
-Thoughts?
-
 ```{r}
-# Sarah's plot
+# Alt plot by mean
 ggplot(data, aes(x=clarity, y=price))+
   scale_y_continuous(labels = scales::comma)+
   stat_summary(fun = "mean", geom = "bar",fill="darkslategrey")+
@@ -162,6 +155,36 @@ ggplot(data, aes(x=clarity,y=price))+
   scale_y_continuous(labels = scales::comma)+
   labs(x="Clarity", y="Price",title="Scatterplot of Blue Nile Diamond Clarity Against Price")+
   theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+data$clarity_modified <- gsub('[0-9.]', '', data$clarity)
+data
+
+data$clarity_modified <-factor(data$clarity_modified, levels =c("SI","VS","VVS","IF", "FL"))
+# Sarah's plot with modified distribution
+ggplot(data, aes(x=clarity_modified, y=price))+
+  scale_y_continuous(labels = scales::comma)+
+  stat_summary(fun = "mean", geom = "bar",fill="darkslategrey")+
+  theme(axis.text.x = element_text(angle = 0),
+        plot.title = element_text(hjust = 0.5))+
+  labs(x="Clarity", y="Price",title="Distribution of Clarity Grouped vs Average Price")
+
+group_mean<- aggregate(x= data$price,
+                       # Specify group indicator
+                       by = list(data$clarity_modified),      
+                       # Specify function (i.e. mean)
+                       FUN = mean)
+print(group_mean)
+
+
+
+#Diamond Clarity by Color
+ggplot(data, aes(x=clarity,fill=color))+
+  geom_bar(stat="count", width=0.7)+
+  theme(axis.text.x = element_text(), 
+        plot.title = element_text(hjust = 0.5))+
+  labs(title = "Diamond Clarity by Color",x="Diamond Clarity", y="Number of Diamonds")
 ```
 
 ### Carat 
