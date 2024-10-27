@@ -429,7 +429,7 @@ ggplot2::ggplot(data, aes(x=carat,y=newy))+
 
 Based on the graph we will choose to use a log(x) transformation to the carat.
 
-Regress y^2 against x* and create the corresponding residual plot.
+Regress y* against x* and create the corresponding residual plot.
 ```{r}
 data$caratstar<-log(data$carat)
 
@@ -482,8 +482,9 @@ anova.tab
 The anova F  statistic is 25535. The hypotheses are H0 = B1 =0 and Ha <> 0. Since the p-value is small, we reject the null hypothesis. This supports the claim that there is a linear association between price and carat. 
 
 **P-test **
-
-
+```{r}
+qf(0.95,1,1212)
+```
 **Assessing R squared **
 The R^2 is 0.9547.  This means that about 95.47% of the variation in the price can be explained by the number of carats for diamonds.
 
